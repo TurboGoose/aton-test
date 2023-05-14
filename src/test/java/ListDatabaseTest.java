@@ -12,7 +12,7 @@ class DatabaseTest {
 
     @BeforeEach
     public void setUp() {
-        db = new ListDatabase();
+        db = new DatabaseImpl();
     }
 
     @Test
