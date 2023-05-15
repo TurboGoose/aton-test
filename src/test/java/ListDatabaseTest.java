@@ -1,7 +1,6 @@
+import models.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -86,7 +85,7 @@ class DatabaseTest {
 
     @Test
     public void whenGetByNonExistentNameThenEmptyList() {
-        assertThat(db.getByName("Alex"), is(Collections.emptyList()));
+        assertThat(db.getByName("Alex").isEmpty(), is(true));
     }
 
     @Test
@@ -100,6 +99,6 @@ class DatabaseTest {
 
     @Test
     public void whenGetByNonExistentValueThenEmptyList() {
-        assertThat(db.getByValue(50.1), is(Collections.emptyList()));
+        assertThat(db.getByValue(50.1).isEmpty(), is(true));
     }
 }

@@ -1,9 +1,11 @@
+package models;
+
 import java.util.Objects;
 
 public class Account {
-    private final long id; // primary key, immutable
-    private String name;
-    private double value;
+    private final long id; // primary key, sorted -> binary search
+    private String name; // radix tree
+    private double value; // some tree (t-tree?)
 
     public Account(long id, String name, double value) {
         this.id = id;
@@ -46,7 +48,7 @@ public class Account {
 
     @Override
     public String toString() {
-        return "Account{" +
+        return "models.Account{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", value=" + value +

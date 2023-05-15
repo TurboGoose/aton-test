@@ -1,11 +1,16 @@
+import indices.StringIndex;
+import models.Account;
+
 import java.util.*;
 
 public class DatabaseImpl implements Database {
     private final List<Account> accounts = new ArrayList<>(); // sorted by id
+    private final StringIndex<Account> nameIndex = new StringIndex<>();
 
     @Override
     public void add(Account account) { // O(N)
         accounts.add(findIndexToInsert(account.getId()), account);
+        nameIndex.add(account.getName(), account);
     }
 
     private int findIndexToInsert(long id) {
@@ -21,14 +26,18 @@ public class DatabaseImpl implements Database {
     @Override
     public void delete(long id) { // O(N)
         try {
-            accounts.remove(findIndexOfExistingAccount(id));
+            Account deleted = accounts.remove(findIndexOfExistingAccount(id));
+            nameIndex.delete(deleted.getName(), deleted);
         } catch (IllegalArgumentException ignore) {}
     }
 
     @Override
     public void update(Account account) { // O(logN)
         Account accountToUpdate = accounts.get(findIndexOfExistingAccount(account.getId()));
-        accountToUpdate.setName(account.getName());
+        if (!accountToUpdate.getName().equals(account.getName())) {
+            nameIndex.update(accountToUpdate.getName(), account.getName());
+            accountToUpdate.setName(account.getName());
+        }
         accountToUpdate.setValue(account.getValue());
     }
 
@@ -52,10 +61,9 @@ public class DatabaseImpl implements Database {
     }
 
     @Override
-    public List<Account> getByName(String name) { // O(N)
-        return accounts.stream()
-                .filter(acc -> acc.getName().equals(name))
-                .toList();
+    public Collection<Account> getByName(String name) { // O(K) where K = name.size()
+        Collection<Account> accounts = nameIndex.get(name);
+        return accounts == null ? new HashSet<>() : accounts;
     }
 
     @Override

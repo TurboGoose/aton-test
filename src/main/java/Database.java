@@ -1,4 +1,6 @@
-import java.util.List;
+import models.Account;
+
+import java.util.Collection;
 import java.util.Optional;
 
 public interface Database {
@@ -10,7 +12,7 @@ public interface Database {
 
     Optional<Account> getById(long id);
 
-    List<Account> getByName(String name);
+    Collection<Account> getByName(String name);
 
-    List<Account> getByValue(double value);
+    Collection<Account> getByValue(double value);
 }
