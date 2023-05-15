@@ -1,13 +1,13 @@
-package trees;
+package indices;
 
 import java.util.HashMap;
 
 
-public class Tree<V> {
+public class RadixTree<V> {
     private static final int NO_MISMATCH = -1;
     private Node root;
 
-    public Tree() {
+    public RadixTree() {
         root = new Node(null);
     }
 
@@ -21,34 +21,15 @@ public class Tree<V> {
         return NO_MISMATCH;
     }
 
-    //Helpful method to debug and to see all the words
-    public void printAllWords() {
-        printAllWords(root, "");
-    }
-
-    private void printAllWords(Node current, String result) {
-        if (current.isLeaf()) {
-            System.out.println(result);
-        }
-
-        for (Edge edge : current.edges.values()) {
-            printAllWords(edge.next, result + edge.label);
-        }
-    }
-
     public void put(String key, V value) {
         Node current = root;
         int currIndex = 0;
 
-        //Iterative approach
         while (currIndex < key.length()) {
             char transitionChar = key.charAt(currIndex);
             Edge currentEdge = current.getTransition(transitionChar);
-            //Updated version of the input key
             String currStr = key.substring(currIndex);
 
-            //There is no associated edge with the first character of the current string
-            //so simply add the rest of the string and finish
             if (currentEdge == null) {
                 Node newNode = new Node(value);
                 current.edges.put(transitionChar, new Edge(currStr, newNode));
@@ -57,13 +38,10 @@ public class Tree<V> {
 
             int splitIndex = getFirstMismatchLetter(currStr, currentEdge.label);
             if (splitIndex == NO_MISMATCH) {
-                //The edge and leftover string are the same length
-                //so finish and update the next node as a key node
                 if (currStr.length() == currentEdge.label.length()) {
                     currentEdge.next.value = value;
                     break;
                 } else if (currStr.length() < currentEdge.label.length()) {
-                    //The leftover key is a prefix to the edge string, so split
                     String suffix = currentEdge.label.substring(currStr.length());
                     currentEdge.label = currStr;
                     Node newNext = new Node(value);
@@ -71,12 +49,10 @@ public class Tree<V> {
                     currentEdge.next = newNext;
                     newNext.addEdge(suffix, afterNewNext);
                     break;
-                } else { //currStr.length() > currentEdge.label.length()
-                    //There is leftover string after a perfect match
+                } else {
                     splitIndex = currentEdge.label.length();
                 }
             } else {
-                //The leftover string and edge string differed, so split at point
                 String suffix = currentEdge.label.substring(splitIndex);
                 currentEdge.label = currentEdge.label.substring(0, splitIndex);
                 Node prevNext = currentEdge.next;
@@ -84,7 +60,6 @@ public class Tree<V> {
                 currentEdge.next.addEdge(suffix, prevNext);
             }
 
-            //Traverse the tree
             current = currentEdge.next;
             currIndex += splitIndex;
         }
@@ -95,9 +70,7 @@ public class Tree<V> {
     }
 
     private Node delete(Node current, String word) {
-        //base case, all the characters have been matched from previous checks
         if (word.isEmpty()) {
-            //Has no other edges,
             if (current.edges.isEmpty() && current != root) {
                 return null;
             }
@@ -107,7 +80,6 @@ public class Tree<V> {
 
         char transitionChar = word.charAt(0);
         Edge edge = current.getTransition(transitionChar);
-        //Has no edge for the current word or the word doesn't exist
         if (edge == null || !word.startsWith(edge.label)) {
             return current;
         }
@@ -149,7 +121,7 @@ public class Tree<V> {
     }
 
 
-    private class Node { //This code is nested inside the RadixTree class
+    private class Node {
         private HashMap<Character, Edge> edges;
         private V value;
 
@@ -176,7 +148,7 @@ public class Tree<V> {
         }
     }
 
-    private class Edge { //This code is nested inside the RadixTree class
+    private class Edge {
         private String label;
         private Node next;
 
