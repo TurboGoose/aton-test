@@ -3,12 +3,12 @@ package trees;
 import java.util.HashMap;
 
 
-public class Tree<T> {
+public class Tree<V> {
     private static final int NO_MISMATCH = -1;
     private Node root;
 
     public Tree() {
-        root = new Node(false);
+        root = new Node(null);
     }
 
     private int getFirstMismatchLetter(String word, String edgeWord) {
@@ -27,7 +27,7 @@ public class Tree<T> {
     }
 
     private void printAllWords(Node current, String result) {
-        if (current.isLeaf) {
+        if (current.isLeaf()) {
             System.out.println(result);
         }
 
@@ -36,36 +36,37 @@ public class Tree<T> {
         }
     }
 
-    public void insert(String word) {
+    public void put(String key, V value) {
         Node current = root;
         int currIndex = 0;
 
         //Iterative approach
-        while (currIndex < word.length()) {
-            char transitionChar = word.charAt(currIndex);
+        while (currIndex < key.length()) {
+            char transitionChar = key.charAt(currIndex);
             Edge currentEdge = current.getTransition(transitionChar);
-            //Updated version of the input word
-            String currStr = word.substring(currIndex);
+            //Updated version of the input key
+            String currStr = key.substring(currIndex);
 
             //There is no associated edge with the first character of the current string
             //so simply add the rest of the string and finish
             if (currentEdge == null) {
-                current.edges.put(transitionChar, new Edge(currStr));
+                Node newNode = new Node(value);
+                current.edges.put(transitionChar, new Edge(currStr, newNode));
                 break;
             }
 
             int splitIndex = getFirstMismatchLetter(currStr, currentEdge.label);
             if (splitIndex == NO_MISMATCH) {
                 //The edge and leftover string are the same length
-                //so finish and update the next node as a word node
+                //so finish and update the next node as a key node
                 if (currStr.length() == currentEdge.label.length()) {
-                    currentEdge.next.isLeaf = true;
+                    currentEdge.next.value = value;
                     break;
                 } else if (currStr.length() < currentEdge.label.length()) {
-                    //The leftover word is a prefix to the edge string, so split
+                    //The leftover key is a prefix to the edge string, so split
                     String suffix = currentEdge.label.substring(currStr.length());
                     currentEdge.label = currStr;
-                    Node newNext = new Node(true);
+                    Node newNext = new Node(value);
                     Node afterNewNext = currentEdge.next;
                     currentEdge.next = newNext;
                     newNext.addEdge(suffix, afterNewNext);
@@ -79,7 +80,7 @@ public class Tree<T> {
                 String suffix = currentEdge.label.substring(splitIndex);
                 currentEdge.label = currentEdge.label.substring(0, splitIndex);
                 Node prevNext = currentEdge.next;
-                currentEdge.next = new Node(false);
+                currentEdge.next = new Node(null);
                 currentEdge.next.addEdge(suffix, prevNext);
             }
 
@@ -89,7 +90,7 @@ public class Tree<T> {
         }
     }
 
-    public void delete(String word) {
+    public void remove(String word) {
         root = delete(root, word);
     }
 
@@ -100,7 +101,7 @@ public class Tree<T> {
             if (current.edges.isEmpty() && current != root) {
                 return null;
             }
-            current.isLeaf = false;
+            current.value = null;
             return current;
         }
 
@@ -114,10 +115,10 @@ public class Tree<T> {
         Node deleted = delete(edge.next, word.substring(edge.label.length()));
         if (deleted == null) {
             current.edges.remove(transitionChar);
-            if (current.totalEdges() == 0 && !current.isLeaf && current != root) {
+            if (current.totalEdges() == 0 && !current.isLeaf() && current != root) {
                 return null;
             }
-        } else if (deleted.totalEdges() == 1 && !deleted.isLeaf) {
+        } else if (deleted.totalEdges() == 1 && !deleted.isLeaf()) {
             current.edges.remove(transitionChar);
             for (Edge afterDeleted : deleted.edges.values()) {
                 current.addEdge(edge.label + afterDeleted.label, afterDeleted.next);
@@ -126,37 +127,40 @@ public class Tree<T> {
         return current;
     }
 
-    public boolean search(String word) {
+    public V get(String key) {
         Node current = root;
         int currIndex = 0;
-        while (currIndex < word.length()) {
-            char transitionChar = word.charAt(currIndex);
+        while (currIndex < key.length()) {
+            char transitionChar = key.charAt(currIndex);
             Edge edge = current.getTransition(transitionChar);
             if (edge == null) {
-                return false;
+                return null;
             }
 
-            String currSubstring = word.substring(currIndex);
+            String currSubstring = key.substring(currIndex);
             if (!currSubstring.startsWith(edge.label)) {
-                return false;
+                return null;
             }
             currIndex += edge.label.length();
             current = edge.next;
         }
 
-        return current.isLeaf;
+        return current.value;
     }
 
 
     private class Node { //This code is nested inside the RadixTree class
-        private boolean isLeaf;
         private HashMap<Character, Edge> edges;
-        // TODO: add parent
-        // TODO: add payload
+        private V value;
 
-        public Node(boolean isLeaf) {
-            this.isLeaf = isLeaf;
+
+        public Node(V value) {
+            this.value = value;
             edges = new HashMap<>();
+        }
+
+        public boolean isLeaf() {
+            return value == null;
         }
 
         public Edge getTransition(char transitionChar) {
@@ -175,10 +179,6 @@ public class Tree<T> {
     private class Edge { //This code is nested inside the RadixTree class
         private String label;
         private Node next;
-
-        public Edge(String label) {
-            this(label, new Node(true));
-        }
 
         public Edge(String label, Node next) {
             this.label = label;
