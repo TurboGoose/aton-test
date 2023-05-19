@@ -1,47 +1,44 @@
 package indices;
 
-import java.util.Arrays;
-import java.util.Random;
-import java.util.Stack;
-import java.util.StringTokenizer;
+import java.util.*;
 
-public class TTree {
-    private Node root;
+public class TTree<K extends Comparable<K>, V> {
+    private final Node<K, V> root;
     private Boolean fixed;
-    private Stack<Node> newNodes;
+    private final Stack<Node<K, V>> newNodes;
 
     public TTree() {
-        root = new Node(null);
-        Node t = new Node(root);
+        root = new Node<>(null);
+        Node<K, V> t = new Node<>(root);
         root.setLeft(t);
 
         fixed = false;
         newNodes = new Stack<>();
     }
 
-    public boolean search(int x) {
-        return search(root.getLeft(), x);
+    public V search(K key) {
+        return search(root.getLeft(), key);
     }
 
-    private boolean search(Node curr, int x) {
+    private V search(Node<K, V> curr, K key) {
         if (curr == null){
-            return false;
+            return null;
         }
-        int t = curr.isBoundingNode(x);
+        int t = curr.isBoundingNode(key);
         if (t == 0) {
-            return curr.isContains(x);
+            return curr.get(key);
         }
         if (t < 0) {
-            return search(curr.getLeft(), x);
+            return search(curr.getLeft(), key);
         }
-        return search(curr.getRight(), x);
+        return search(curr.getRight(), key);
     }
 
-    public void insert(int x) {
-        insert(root.getLeft(), x);
+    public void insert(K key, V value) {
+        insert(root.getLeft(), key, value);
     }
 
-    private void preFix(Node child) {
+    private void preFix(Node<K, V> child) {
         newNodes.add(child);
         if (!fixed) {
             fixed = true;
@@ -49,69 +46,70 @@ public class TTree {
         }
     }
 
-    private void insert(Node curr, int x) {
-        int t = curr.isBoundingNode(x);
+    private void insert(Node<K, V> curr, K key, V value) {
+        int t = curr.isBoundingNode(key);
         if (t == 0) {
-            if (curr.isContains(x)) {
+            if (curr.get(key) != null) {
                 return;
             }
             if (curr.getLength() != Node.MAX_ELEMENTS) {
-                curr.insert(x);
+                curr.insert(key, value);
                 return;
             }
-            int min = curr.getMinimum();
-            curr.delete(min);
-            curr.insert(x);
+            K minKey = curr.getMinKey();
+            V minVal = curr.getMinValue();
+            curr.delete(minKey);
+            curr.insert(key, value);
             if (curr.getLeft() != null) {
-                insert(curr.getLeft(), min);
+                insert(curr.getLeft(), minKey, minVal);
                 return;
             }
-            Node child = new Node(curr);
-            child.insert(min);
+            Node<K, V> child = new Node<>(curr);
+            child.insert(minKey, minVal);
             curr.setLeft(child);
             preFix(child);
             return;
         }
         if (t > 0) {
-            insertRight(curr, x);
+            insertRight(curr, key, value);
             return;
         }
-        insertLeft(curr, x);
+        insertLeft(curr, key, value);
     }
 
-    private void insertRight(Node curr, int x) {
+    private void insertRight(Node<K, V> curr, K key, V value) {
         if (curr.getRight() != null) {
-            insert(curr.getRight(), x);
+            insert(curr.getRight(), key, value);
             return;
         }
         if (curr.getLength() != Node.MAX_ELEMENTS) {
-            curr.insert(x);
+            curr.insert(key, value);
             return;
         }
-        Node child = new Node(curr);
-        child.insert(x);
+        Node<K, V> child = new Node<>(curr);
+        child.insert(key, value);
         curr.setRight(child);
         preFix(child);
     }
 
-    private void insertLeft(Node curr, int x) {
+    private void insertLeft(Node<K, V> curr, K key, V value) {
         if (curr.getLeft() != null) {
-            insert(curr.getLeft(), x);
+            insert(curr.getLeft(), key, value);
             return;
         }
         if (curr.getLength() != Node.MAX_ELEMENTS) {
-            curr.insert(x);
+            curr.insert(key, value);
             return;
         }
-        Node child = new Node(curr);
-        child.insert(x);
+        Node<K, V> child = new Node<>(curr);
+        child.insert(key, value);
         curr.setLeft(child);
         preFix(child);
     }
 
     private void fixTree() {
         while (!newNodes.isEmpty()) {
-            Node curr = newNodes.pop();
+            Node<K, V> curr = newNodes.pop();
             while (curr != root) {
                 curr.rebalance();
                 curr = curr.getParent();
@@ -120,11 +118,12 @@ public class TTree {
         fixed = false;
     }
 
+    @Override
     public String toString() {
         return getAll(root.getLeft());
     }
 
-    private String getAll(Node curr) {
+    private String getAll(Node<K, V> curr) {
         StringBuilder res = new StringBuilder();
         if (curr.getLeft() != null) {
             res.append(getAll(curr.getLeft()));
@@ -135,288 +134,206 @@ public class TTree {
         return res.toString();
     }
 
-    public boolean isBalanced() {
-        return isBalanced(root.getLeft());
-    }
 
-    private boolean isBalanced(Node curr) {
-        if (curr == null) {
-            return true;
+    static class Node<K extends Comparable<K>, V> {
+        static final int MIN_ELEMENTS = 30, MAX_ELEMENTS = 2 * MIN_ELEMENTS;
+        private final List<K> keys;
+        private final List<V> values;
+        private Node<K, V> left, right, parent;
+        private int h, balance;
+
+        public Node(Node<K, V> parent) {
+            keys = new ArrayList<>(MAX_ELEMENTS);
+            values = new ArrayList<>(MAX_ELEMENTS);
+            this.parent = parent;
+            h = 1;
+            balance = 0;
         }
-        int b = curr.getBalance();
-        return (b < 2) && (b > -2) && isBalanced(curr.getLeft()) && isBalanced(curr.getRight());
-    }
-}
 
-
-class Node {
-    static final int MIN_ELEMENTS = 30, MAX_ELEMENTS = 2 * MIN_ELEMENTS;
-    private int[] data;
-    private int len;
-    private Node left, right, parent;
-    private int h, balance;
-
-    public Node(Node parent) {
-        len = 0;
-        data = new int[MAX_ELEMENTS];
-        this.parent = parent;
-        h = 1;
-        balance = 0;
-    }
-
-    public int isBoundingNode(int x) {
-        if (len == 0) {
+        public int isBoundingNode(K key) {
+            if (keys.isEmpty()) {
+                return 0;
+            }
+            if (key.compareTo(keys.get(0)) < 0) {
+                return -1;
+            }
+            if (key.compareTo(keys.get(keys.size() - 1)) > 0) {
+                return 1;
+            }
             return 0;
         }
-        if (x < data[0]) {
-            return -1;
+
+        public void insert(K key, V value) {
+            if (keys.size() == MAX_ELEMENTS) {
+                return;
+            }
+            int insertIndex = -Collections.binarySearch(keys, key) - 1;
+            keys.add(insertIndex, key);
+            values.add(insertIndex, value);
         }
-        if (x > data[len - 1]) {
-            return 1;
+
+        public void delete(K key) {
+            int index = Collections.binarySearch(keys, key);
+            if (index < 0) {
+                return;
+            }
+            keys.remove(index);
+            values.remove(index);
         }
-        return 0;
-    }
 
-    public void insert(int x) {
-        if (len == MAX_ELEMENTS) {
-            return;
+        public V get(K key) {
+            int index = Collections.binarySearch(keys, key);
+            return index >= 0 ? values.get(index) : null;
         }
-        int i = len;
-        while (i > 0 && data[i - 1] > x) {
-            data[i] = data[i - 1];
-            i--;
+
+        public int getLength() {
+            return keys.size();
         }
-        data[i] = x;
-        len++;
-    }
 
-    public void delete(int x) {
-        int i = 0;
-        while (data[i] != x && i < len) {
-            i++;
+        @Override
+        public String toString() {
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < keys.size(); i++) {
+                result.append(keys.get(i)).append(" : ").append(values.get(i)).append("\n");
+            }
+            return result.toString();
         }
-        if (i == len) {
-            return;
+
+        public boolean isLeaf() {
+            return left == null || right == null;
         }
-        while (i < len - 1) {
-            data[i] = data[i + 1];
-            i++;
+
+        public Node<K, V> getLeft() {
+            return left;
         }
-        len--;
-    }
 
-    public boolean isContains(int x) {
-        return Arrays.binarySearch(data, 0, len, x) >= 0;
-    }
-
-    public int getLength() {
-        return len;
-    }
-
-    public String toString() {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < len; i++) {
-            result.append(data[i]).append(" ");
+        public Node<K, V> getRight() {
+            return right;
         }
-        return result.toString();
-    }
 
-    public boolean isLeaf() {
-        return left == null || right == null;
-    }
-
-    public Node getLeft() {
-        return left;
-    }
-
-    public Node getRight() {
-        return right;
-    }
-
-    public Node getParent() {
-        return parent;
-    }
-
-    public void setLeft(Node x) {
-        left = x;
-        updateBalance();
-    }
-
-    public void setRight(Node x) {
-        right = x;
-        updateBalance();
-    }
-
-    public int getMinimum() {
-        return data[0];
-    }
-
-    public int getMaximum() {
-        return data[len - 1];
-    }
-
-    public int getBalance() {
-        return balance;
-    }
-
-    private void updateBalance() {
-        int l = 0, r = 0;
-        if (left != null) {
-            l = left.h;
+        public Node<K, V> getParent() {
+            return parent;
         }
-        if (right != null) {
-            r = right.h;
-        }
-        h = 1 + Math.max(l, r);
-        balance = l - r;
-    }
 
-    public void rebalance() {
-        updateBalance();
-        if (balance == -2) {
-            if (right.balance == -1) {
-                leftRotation();
+        public void setLeft(Node<K, V> x) {
+            left = x;
+            updateBalance();
+        }
+
+        public void setRight(Node<K, V> x) {
+            right = x;
+            updateBalance();
+        }
+
+        public K getMinKey() {
+            return keys.get(0);
+        }
+
+        public K getMaxKey() {
+            return keys.get(keys.size() - 1);
+        }
+
+        public V getMinValue() {
+            return values.get(0);
+        }
+
+        public V getMaxValue() {
+            return values.get(keys.size() - 1);
+        }
+
+        private void updateBalance() {
+            int l = 0, r = 0;
+            if (left != null) {
+                l = left.h;
+            }
+            if (right != null) {
+                r = right.h;
+            }
+            h = 1 + Math.max(l, r);
+            balance = l - r;
+        }
+
+        public void rebalance() {
+            updateBalance();
+            if (balance == -2) {
+                if (right.balance == -1) {
+                    leftRotation();
+                }
+                else {
+                    if (right.left.isLeaf() && right.right == null && left == null && right.left.keys.size() == 1) {
+                        replaceMin(right, right.left);
+                    }
+                    right.rightRotation();
+                    leftRotation();
+                }
+            } else if (balance == 2) {
+                if (left.balance == 1) {
+                    rightRotation();
+                }
+                else {
+                    if (left.right.isLeaf() && left.left == null && right == null && left.right.keys.size() == 1) {
+                        replaceMax(left, left.right);
+                    }
+                    left.leftRotation();
+                    rightRotation();
+                }
+            }
+        }
+
+        private void replaceMin(Node<K, V> from, Node<K, V> to) {
+            while (from.keys.size() != 1) {
+                to.insert(from.getMinKey(), from.getMinValue());
+                from.delete(from.getMinKey());
+            }
+        }
+
+        private void replaceMax(Node<K, V> from, Node<K, V> to) {
+            while (from.keys.size() != 1) {
+                to.insert(from.getMaxKey(), from.getMaxValue());
+                from.delete(from.getMaxKey());
+            }
+        }
+
+        private void leftRotation() {
+            Node<K, V> p = parent;
+            Node<K, V> r = right;
+
+            right = r.left;
+            if (r.left != null) {
+                r.left.parent = this;
+            }
+            r.left = this;
+            parent = r;
+            if (p.left == this) {
+                p.left = r;
             }
             else {
-                if (right.left.isLeaf() && right.right == null && left == null && right.left.len == 1) {
-                    replaceMin(right, right.left);
-                }
-                right.rightRotation();
-                leftRotation();
+                p.right = r;
             }
-        } else if (balance == 2) {
-            if (left.balance == 1) {
-                rightRotation();
+            r.parent = p;
+            updateBalance();
+            r.updateBalance();
+        }
+
+        private void rightRotation() {
+            Node<K, V> p = parent;
+            Node<K, V> l = left;
+
+            left = l.right;
+            if (l.right != null) {
+                l.right.parent = this;
+            }
+            l.right = this;
+            parent = l;
+            if (p.left == this) {
+                p.left = l;
             }
             else {
-                if (left.right.isLeaf() && left.left == null && right == null && left.right.len == 1) {
-                    replaceMax(left, left.right);
-                }
-                left.leftRotation();
-                rightRotation();
+                p.right = l;
             }
-        }
-    }
-
-    private void replaceMin(Node from, Node to) {
-        while (from.len != 1) {
-            to.insert(from.getMinimum());
-            from.delete(from.getMinimum());
-        }
-    }
-
-    private void replaceMax(Node from, Node to) {
-        while (from.len != 1) {
-            to.insert(from.getMaximum());
-            from.delete(from.getMaximum());
-        }
-    }
-
-    private void leftRotation() {
-        Node p = parent;
-        Node r = right;
-
-        right = r.left;
-        if (r.left != null) {
-            r.left.parent = this;
-        }
-        r.left = this;
-        parent = r;
-        if (p.left == this) {
-            p.left = r;
-        }
-        else {
-            p.right = r;
-        }
-        r.parent = p;
-        updateBalance();
-        r.updateBalance();
-    }
-
-    private void rightRotation() {
-        Node p = parent;
-        Node l = left;
-
-        left = l.right;
-        if (l.right != null) {
-            l.right.parent = this;
-        }
-        l.right = this;
-        parent = l;
-        if (p.left == this) {
-            p.left = l;
-        }
-        else {
-            p.right = l;
-        }
-        l.parent = p;
-        updateBalance();
-        l.updateBalance();
-    }
-}
-
-
-class Test {
-
-    private TTree tree = new TTree();
-    private boolean[] wasAdded;
-
-    void insert() {
-        Random rand = new Random();
-        for (int i = 0; i < 40000; i++) {
-            int t = rand.nextInt(300000);
-            tree.insert(t);
-            wasAdded[t] = true;
-            //System.out.println(i + " Insert " + t);
-        }
-    }
-
-    void search() {
-        Random rand = new Random();
-        for (int i = 0; i < 20000; i++){
-            int t = rand.nextInt(300000);
-            tree.search(t);
-            //System.out.println(i + " Search " + t + " - " + tree.search(t));
-        }
-    }
-
-    public void runRandomTest() {
-        wasAdded = new boolean[300000];
-        insert();
-        search();
-        boolean f = check(tree);
-        if (!f) {
-            System.out.println("ERROR!!!");
-            System.out.println(tree);
-            System.exit(1);
-        }
-        else {
-            System.out.println("OK");
-        }
-    }
-
-    private boolean check(TTree tree) {
-        return tree.isBalanced() && isSortedAndNoRepeat(tree);
-    }
-
-    private boolean isSortedAndNoRepeat(TTree tree) {
-        String s = tree.toString();
-        StringTokenizer tokenizer = new StringTokenizer(s);
-        int prev = -1;
-        while (tokenizer.hasMoreTokens()) {
-            int curr = Integer.parseInt(tokenizer.nextToken());
-            if (curr <= prev) {
-                return false;
-            }
-            prev = curr;
-        }
-        return true;
-    }
-
-    public static void main(String[] args) {
-        for (int i = 0; i < 300; i++){
-            System.out.println("Random Test #" + i);
-            new Test().runRandomTest();
+            l.parent = p;
+            updateBalance();
+            l.updateBalance();
         }
     }
 }
