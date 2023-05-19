@@ -134,6 +134,18 @@ public class TTree<K extends Comparable<K>, V> {
         return res.toString();
     }
 
+    public boolean isBalanced() {
+        return isBalanced(root.getLeft());
+    }
+
+    private boolean isBalanced(Node<K, V> curr) {
+        if (curr == null) {
+            return true;
+        }
+        int b = curr.getBalance();
+        return (b < 2) && (b > -2) && isBalanced(curr.getLeft()) && isBalanced(curr.getRight());
+    }
+
 
     static class Node<K extends Comparable<K>, V> {
         static final int MIN_ELEMENTS = 30, MAX_ELEMENTS = 2 * MIN_ELEMENTS;
@@ -239,6 +251,10 @@ public class TTree<K extends Comparable<K>, V> {
 
         public V getMaxValue() {
             return values.get(keys.size() - 1);
+        }
+
+        public int getBalance() {
+            return balance;
         }
 
         private void updateBalance() {
