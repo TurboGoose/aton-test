@@ -1,3 +1,4 @@
+import indices.GeneralIndex;
 import indices.StringIndex;
 import models.Account;
 
@@ -6,11 +7,13 @@ import java.util.*;
 public class DatabaseImpl implements Database {
     private final List<Account> accounts = new ArrayList<>(); // sorted by id
     private final StringIndex<Account> nameIndex = new StringIndex<>();
+    private final GeneralIndex<Double, Account> valueIndex = new GeneralIndex<>();
 
     @Override
     public void add(Account account) { // O(N)
         accounts.add(findIndexToInsert(account.getId()), account);
         nameIndex.add(account.getName(), account);
+        valueIndex.add(account.getValue(), account);
     }
 
     private int findIndexToInsert(long id) {
@@ -28,6 +31,7 @@ public class DatabaseImpl implements Database {
         try {
             Account deleted = accounts.remove(findIndexOfExistingAccount(id));
             nameIndex.delete(deleted.getName(), deleted);
+            valueIndex.delete(deleted.getValue(), deleted);
         } catch (IllegalArgumentException ignore) {}
     }
 
@@ -36,6 +40,7 @@ public class DatabaseImpl implements Database {
         Account accountToUpdate = accounts.get(findIndexOfExistingAccount(account.getId()));
         if (!accountToUpdate.getName().equals(account.getName())) {
             nameIndex.update(accountToUpdate.getName(), account.getName());
+            valueIndex.update(accountToUpdate.getValue(), account.getValue());
             accountToUpdate.setName(account.getName());
         }
         accountToUpdate.setValue(account.getValue());
@@ -67,9 +72,8 @@ public class DatabaseImpl implements Database {
     }
 
     @Override
-    public List<Account> getByValue(double value) { // O(N)
-        return accounts.stream()
-                .filter(acc -> acc.getValue() == value)
-                .toList();
+    public Collection<Account> getByValue(double value) { // O(N)
+        Collection<Account> accounts = valueIndex.get(value);
+        return accounts == null ? new HashSet<>() : accounts;
     }
 }
