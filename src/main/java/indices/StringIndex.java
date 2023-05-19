@@ -4,39 +4,39 @@ import java.util.Collection;
 import java.util.HashSet;
 
 public class StringIndex<T> implements Index<String, T> {
-    private final RadixTree<Collection<T>> tree = new RadixTree<>();
+    private final Trie<Collection<T>> trie = new Trie<>();
 
     @Override
     public void add(String key, T value) {
-        Collection<T> present = tree.get(key);
+        Collection<T> present = trie.get(key);
         if (present == null) {
             present = new HashSet<>();
-            tree.put(key, present);
+            trie.put(key, present);
         }
         present.add(value);
     }
 
     @Override
     public void delete(String key, T value) {
-        Collection<T> present = tree.get(key);
+        Collection<T> present = trie.get(key);
         if (present == null) {
             return;
         }
         present.remove(value);
         if (present.isEmpty()) {
-            tree.remove(key);
+            trie.remove(key);
         }
     }
 
     @Override
     public Collection<T> get(String key) {
-        return tree.get(key);
+        return trie.get(key);
     }
 
     @Override
     public void update(String oldKey, String newKey) {
-        Collection<T> present = tree.get(oldKey);
-        tree.remove(oldKey);
-        tree.put(newKey, present);
+        Collection<T> present = trie.get(oldKey);
+        trie.remove(oldKey);
+        trie.put(newKey, present);
     }
 }
