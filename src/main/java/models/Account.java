@@ -7,6 +7,6 @@ import lombok.Data;
 @AllArgsConstructor
 public class Account {
     private final long id; // primary key, sorted -> binary search
-    private String name; // radix tree
+    private String name; // trie
     private double value; // rb tree (TreeMap)
 }

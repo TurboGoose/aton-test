@@ -1,4 +1,5 @@
 import indices.GeneralIndex;
+import indices.Index;
 import indices.StringIndex;
 import models.Account;
 
@@ -6,8 +7,8 @@ import java.util.*;
 
 public class DatabaseImpl implements Database {
     private final List<Account> accounts = new ArrayList<>(); // sorted by id
-    private final StringIndex<Account> nameIndex = new StringIndex<>();
-    private final GeneralIndex<Double, Account> valueIndex = new GeneralIndex<>();
+    private final Index<String, Account> nameIndex = new StringIndex<>();
+    private final Index<Double, Account> valueIndex = new GeneralIndex<>();
 
     @Override
     public void add(Account account) { // O(N)
@@ -72,7 +73,7 @@ public class DatabaseImpl implements Database {
     }
 
     @Override
-    public Collection<Account> getByValue(double value) { // O(N)
+    public Collection<Account> getByValue(double value) { // O(logN)
         Collection<Account> accounts = valueIndex.get(value);
         return accounts == null ? new HashSet<>() : accounts;
     }

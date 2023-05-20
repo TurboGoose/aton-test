@@ -52,8 +52,8 @@ public class Trie<V> {
                 : null;
     }
 
-    public TrieLeaf getLeaf(String key) {
-        return new TrieLeaf(search(key));
+    public Leaf getLeaf(String key) {
+        return new Leaf(search(key));
     }
 
     private String recover(Node<V> node) {
@@ -66,10 +66,10 @@ public class Trie<V> {
     }
 
 
-    public class TrieLeaf {
+    public class Leaf {
         private final Node<V> leaf;
 
-        private TrieLeaf(Node<V> leaf) {
+        private Leaf(Node<V> leaf) {
             this.leaf = leaf;
         }
 
