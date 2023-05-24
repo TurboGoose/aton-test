@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>In-memory-db</artifactId>
+    <artifactId>EDB</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <properties>
         <maven.compiler.source>19</maven.compiler.source>
